@@ -53,17 +53,17 @@ class TokenType(Enum):
 
 
 class Token():
-	def __init__(self, ttype: TokenType, lexeme: str, literal, line: int, pos_start: int = None):
+	def __init__(self, ttype: TokenType, lexeme: str, literal, line: int, lineloc: slice = None):
 		# TODO use a slice object for token Position
 		self.ttype = ttype
 		self.lexeme = lexeme
 		self.literal = literal   # in the java version , this is type "object"
 		self.line = line
-		self.pos_start = pos_start + 1 if pos_start else -1  # add one because the Scanner()'s first position is 0
+		self.lineloc = lineloc
 		# i dunno why -1? imma use slice objects anyways...
 
 	def __str__(self):
-		return f"{self.ttype} {self.lexeme} {self.literal} on line {self.line}:{self.pos_start}"
+		return f"{self.ttype} {self.lexeme} {self.literal} on line {self.line}[{self.lineloc}]"
 
 
 class Scanner():
@@ -75,6 +75,10 @@ class Scanner():
 		self.start = 0
 		self.current = 0
 		self.line = 1
+
+	@property
+	def pos_slice(self):
+		return slice(self.start, self.current)
 
 	def advance(self):
 		char = self.source[self.current]
@@ -96,8 +100,7 @@ class Scanner():
 
 	def scanToken(self):
 		char = self.advance()
-		# bad for runtime
-		for token in TokenType:
+		for token in TokenType:  # bad for runtime
 			if char == token.value:
 				self.addToken(token)
 		"""
@@ -111,6 +114,8 @@ class Scanner():
 
 	def addToken(self, ttype: TokenType, literal=None):
 		# TODO use a slice object for token Position
-		text = self.source[self.start:self.current]
-		token = Token(ttype, lexeme=text, literal=literal, line=self.line, pos_start=self.start)
+		text = self.source[self.pos_slice]  # make into another property! WRAP everything into wrappens javastyle
+		# is this too much pre-emptive compute?
+		# this won't work for multiline
+		token = Token(ttype, lexeme=text, literal=literal, line=self.line, lineloc=self.pos_slice)
 		self.tokens.append(token)
