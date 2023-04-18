@@ -53,14 +53,17 @@ class TokenType(Enum):
 
 
 class Token():
-	def __init__(self, ttype: TokenType, lexeme: str, literal, line: int):
+	def __init__(self, ttype: TokenType, lexeme: str, literal, line: int, pos_start: int = None):
+		# TODO use a slice object for token Position
 		self.ttype = ttype
 		self.lexeme = lexeme
 		self.literal = literal   # in the java version , this is type "object"
 		self.line = line
+		self.pos_start = pos_start + 1 if pos_start else -1  # add one because the Scanner()'s first position is 0
+		# i dunno why -1? imma use slice objects anyways...
 
 	def __str__(self):
-		return f"{self.ttype} {self.lexeme} {self.literal}"
+		return f"{self.ttype} {self.lexeme} {self.literal} on line {self.line}:{self.pos_start}"
 
 
 class Scanner():
@@ -86,7 +89,10 @@ class Scanner():
 			self.start = self.current
 			self.scanToken()
 
-		self.addToken(self, TokenType.EOF, "", None, self.line)
+		self.addToken(Token(TokenType.EOF, "", None, self.line))
+
+		# pythonic or "java"onic???
+		return self.tokens
 
 	def scanToken(self):
 		char = self.advance()
@@ -104,6 +110,7 @@ class Scanner():
 		"""
 
 	def addToken(self, ttype: TokenType, literal=None):
+		# TODO use a slice object for token Position
 		text = self.source[self.start:self.current]
-		token = Token(ttype, lexeme=text, literal=literal, line=self.line)
+		token = Token(ttype, lexeme=text, literal=literal, line=self.line, pos_start=self.start)
 		self.tokens.append(token)
