@@ -1,0 +1,6 @@
+// sample, should write a real program.
+() [] [   ] ([]) (])
+"strings"
+123
+123.1233
+var language = "lox";

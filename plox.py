@@ -2,7 +2,7 @@ import sys
 
 from scanner import Scanner
 
-hadError = False
+global hadError
 
 def runPrompt():
 	while True:
@@ -27,8 +27,11 @@ def run(source):
 		print(token)
 
 if __name__ == "__main__":
+	hadError = False
 	# print(sys.argv)
 	if len(sys.argv) == 1:
 		runPrompt()
 	elif len(sys.argv) == 2:
 		runFile(sys.argv[1])
+		if hadError:
+			sys.exit(65)  # uhm say wha!?
