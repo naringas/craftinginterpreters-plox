@@ -1,8 +1,10 @@
 import sys
 
-from scanner import Scanner
+from scanner import Scanner, Token, TokenType
+from parser import Parser
 
 global hadError
+
 
 def runPrompt():
 	while True:
@@ -21,10 +23,23 @@ def runFile(filepath):
 		run(f.read())
 
 def run(source):
-	tokens: list = Scanner(source).scanTokens()
+	tokens = Scanner(source).scanTokens()
 
-	for token in tokens:
-		print(token)
+	print('TOKENS')
+	for t in tokens:
+		print(t)
+	print('')
+
+	topExp = Parser(tokens).expression()
+
+	if topExp is not None:
+		from expressions import AstPrinter
+
+		print("tree exp")
+		AstPrinter().printout(topExp)
+	else:
+		print("NOPtree exp")
+
 
 if __name__ == "__main__":
 	hadError = False
