@@ -1,7 +1,7 @@
 # parser.py
 
 from scanner import Token, TokenType
-from expressions import Binary, Grouping, Literal, Unary
+from expressions import * #Binary, Grouping, Literal, Unary
 
 
 class ParserError(RuntimeError):
@@ -9,16 +9,16 @@ class ParserError(RuntimeError):
 		assert isinstance(token, Token)
 		self.token = token
 		self.msg = msg
-		return super(self, *args, **kwargs)
+		return super().__init__(self, *args, **kwargs)
 
 
-def error_report(token: Token, msg: str):
+def parse_error(token: Token, msg: str):
 	global hadError
 	hadError = True
 	if token.ttype == TokenType.EOF:
-		print(f'Error at line {token.line} at end', message)
+		print(f'Error at line {token.line} at end.', msg)
 	else:
-		print(f'Error at line {token.detail_pos()} "{token.lexeme}"', message);
+		print(f'Error at line {token.detail_pos()} "{token.lexeme}".', msg);
 
 
 class ParserNav:
@@ -93,15 +93,20 @@ class Parser(ParserNav):
 		self.current = 0
 
 	def parse(self):
-		"""public startup method"""
+		"""public endpoint method"""
 		try:
 			return self.expression()
 		except ParserError as e:
-			error_report(e.token, e.msg)
+			parse_error(e.token, e.msg)
 			return None
 
 	def expression(self):
+		if self.match(TokenType.SLASH):
+			return self.comment()
 		return self.equality()
+
+	def comment(self):
+		return Comment(lexeme=self.previous().lexeme)
 
 	def equality(self):
 		expr = self.comparison()
@@ -162,3 +167,5 @@ class Parser(ParserNav):
 			expr = self.expression()
 			self.consume(TokenType.RIGHT_PAREN, "expect ')'")
 			return Grouping(expr)
+
+		parse_error(self.peek(), "Expected more...")

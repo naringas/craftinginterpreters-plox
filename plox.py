@@ -24,21 +24,27 @@ def runFile(filepath):
 
 def run(source):
 	tokens = Scanner(source).scanTokens()
-
-	print('TOKENS')
-	for t in tokens:
-		print(t)
-	print('')
-
-	topExp = Parser(tokens).expression()
-
-	if topExp is not None:
-		from expressions import AstPrinter
-
-		print("tree exp")
-		AstPrinter().printout(topExp)
+	if not hadError:
+		print('TOKENS')
+		for t in tokens:
+			print(t)
+		print('')
 	else:
-		print("NOPtree exp")
+		print('scan (token gen) ERROR')
+		return
+
+	topExp = Parser(tokens).parse()
+	if not hadError:
+		if topExp is not None:
+			from expressions import AstPrinter
+
+			print("AstPriner printout")
+			AstPrinter().printout(topExp)
+		else:
+			print('need more IMPL')
+	else:
+		print("Parser error")
+		return
 
 
 if __name__ == "__main__":

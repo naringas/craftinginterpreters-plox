@@ -3,11 +3,10 @@
 from enum import Enum, auto, unique
 
 
-def error(line: int, where: str):
+def scan_error(line: int, msg: str):
 	global hadError
-	#fold the report method into this one, I don't see the point of it
 	hadError = True
-	print(f"Error on line: {line}. {where}")
+	print(f"Error on line: {line}. {msg}")
 
 
 @unique
@@ -72,7 +71,7 @@ class Token():
 		# i dunno why -1? imma use slice objects anyways...
 
 	def __str__(self):
-		return f"{self.ttype} {self.lexeme} {self.literal}"
+		return f"[{self.ttype} '{self.lexeme}' `{self.literal}`]"
 
 	def detail_pos(self):
 		return f"on line {self.line}:{self.lineloc.start}-{self.lineloc.stop}"
@@ -137,7 +136,7 @@ class Scanner():
 			self.start = self.current
 			self.scanToken()
 
-		self.addToken(Token(TokenType.EOF, "", None, self.line))
+		self.tokens.append(Token(TokenType.EOF, "", None, self.line))
 		return self.tokens
 
 	def scanToken(self):
@@ -181,7 +180,7 @@ class Scanner():
 						self.advance()
 
 					if self.allDone():
-						error(self.line, f'Infinite string?')  # must. figure. error. shit.
+						scan_error(self.line, f'Infinite string?')  # must. figure. error. shit.
 
 					str_end = self.advance()
 					assert str_end == '"'
@@ -219,11 +218,12 @@ class Scanner():
 							ttype = TokenType.IDENTIFIER
 						self.addToken(ttype)
 					else:
-						error(self.line, f'Unexpected character "{char}" '
+						scan_error(self.line, f'Unexpected character "{char}" '
 						f'on line {self.line}:{self.pos_slice.start}-{self.pos_slice.stop}')
 
 
 	def addToken(self, ttype: TokenType, literal=None):
+		assert isinstance(ttype, TokenType)
 		text = self.source[self.pos_slice]
 		# is this too much pre-emptive compute?
 		# this won't work for multiline
