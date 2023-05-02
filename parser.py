@@ -2,6 +2,7 @@
 
 from scanner import Token, TokenType
 from expressions import * #Binary, Grouping, Literal, Unary
+from statements import Stmt, StmtExpr, StmtPrint, StmtVar
 
 
 class ParserError(RuntimeError):
@@ -61,7 +62,7 @@ class ParserNav:
 			if self.previous().ttype == TokenType.SEMICOLON:
 				return
 
-			if self.peek().ttype in [
+			if self.peek().ttype in (
 				TokenType.CLASS,
 				TokenType.FUN,
 				TokenType.VAR,
@@ -69,7 +70,8 @@ class ParserNav:
 				TokenType.IF,
 				TokenType.WHILE,
 				TokenType.PRINT,
-				TokenType.RETURN]:
+				TokenType.RETURN,
+			):
 				return
 
 			self.advance()
@@ -77,6 +79,14 @@ class ParserNav:
 
 class Parser(ParserNav):
 	"""
+	program        → declaration* EOF ;
+	declaration    → (varDecl | statement) ;
+
+	varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+	statement      → (exprStmt | printStmt) ;
+	exprStmt       → expression ";" ;
+	printStmt      → "print" expression ";" ;
+
 	expression     → equality ;
 	equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 	comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -85,7 +95,8 @@ class Parser(ParserNav):
 	unary          → ( "!" | "-" ) unary
 	               | primary ;
 	primary        → NUMBER | STRING | "true" | "false" | "nil"
-	               | "(" expression ")" ;
+	               | "(" expression ")"
+	               | IDENTIFIER ;
    """
 
 	def __init__(self, tokens: list[Token]):
@@ -94,19 +105,54 @@ class Parser(ParserNav):
 
 	def parse(self):
 		"""public endpoint method"""
+		statements = []
+		while not self.allDone():
+			statements.append(self.declaration())
+		return statements
+
+	def declaration(self):
 		try:
-			return self.expression()
+			if self.match(TokenType.VAR):
+				return self.varDecl()
+			return self.statement()
 		except ParserError as e:
-			parse_error(e.token, e.msg)
+			parse_error(self.peek(), e.msg)
+			self.synchronize()
 			return None
 
-	def expression(self):
-		if self.match(TokenType.SLASH):
-			return self.comment()
-		return self.equality()
+	def varDecl(self):
+		name: Token = self.consume(TokenType.IDENTIFIER, "Expect varirable name.")
+		initer = None
+		if self.match(TokenType.EQUAL):
+			initer: Expr = self.expression()
 
-	def comment(self):
-		return Comment(lexeme=self.previous().lexeme)
+		self.consume(TokenType.SEMICOLON, "Expected ; after variable declaration.")
+		return StmtVar(name, initer)
+
+	def statement(self):
+		if self.match(TokenType.PRINT):
+			return self.printStmt()
+		else:
+			return self.expressionStmt()
+
+	def printStmt(self):
+		if self.match(TokenType.SEMICOLON):
+			# `print ;`  printing nothing case...
+			return StmtPrint(Expr())
+		else:
+			val = self.expression()
+			self.consume(TokenType.SEMICOLON, "expected a ';' after printStmt. where is my  ; !?")
+			return StmtPrint(val)
+		# assert isinstance(val, Expr), f'val is {val.__class__}'
+
+	def expressionStmt(self):
+		val = self.expression()
+		assert isinstance(val, Expr)
+		self.consume(TokenType.SEMICOLON, "expected a ';' after expressionStmt. where is my  ; !?")
+		return StmtExpr(val)
+
+	def expression(self):
+		return self.equality()
 
 	def equality(self):
 		expr = self.comparison()
@@ -168,4 +214,18 @@ class Parser(ParserNav):
 			self.consume(TokenType.RIGHT_PAREN, "expect ')'")
 			return Grouping(expr)
 
-		parse_error(self.peek(), "Expected more...")
+		if self.match(TokenType.IDENTIFIER):
+			return Variable(self.previous().literal)
+
+		"""
+		if self.previous().ttype == TokenType.EOF:
+			# Y we no done?
+			return Expr()
+		"""
+		if self.match(TokenType.SEMICOLON):
+			return Stmt()
+		if self.match(TokenType.EOF):
+			return Expr()  # the void or empty or null expression
+
+		parse_error(self.peek(), "In the end, we expected more INPUT...")
+		# raise ParserError(self.peek(), "Expected more...")

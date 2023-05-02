@@ -2,6 +2,9 @@ import sys
 
 from scanner import Scanner, Token, TokenType
 from parser import Parser
+from interpreter import Interpreter
+from statements import StmtVisitor
+
 
 global hadError
 
@@ -10,10 +13,11 @@ def runPrompt():
 	while True:
 		try:
 			line = input("plox> ")
-		except EOFError:
+		except (EOFError, KeyboardInterrupt):
 			print("\n\nbuhbuy!")
 			break
 		else:
+			# Interpreter().interpret(Parser(Scanner(line).scanTokens()).parse())
 			run(line)
 		hadError = False
 
@@ -23,29 +27,29 @@ def runFile(filepath):
 		run(f.read())
 
 def run(source):
+	print('TOKENS')
 	tokens = Scanner(source).scanTokens()
-	if not hadError:
-		print('TOKENS')
-		for t in tokens:
-			print(t)
-		print('')
-	else:
-		print('scan (token gen) ERROR')
-		return
+	for t in tokens:
+		print(t)
 
-	topExp = Parser(tokens).parse()
-	if not hadError:
-		if topExp is not None:
-			from expressions import AstPrinter
-
-			print("AstPriner printout")
-			AstPrinter().printout(topExp)
+	print('\nSTATEMENTS')
+	stmts_list = Parser(tokens).parse()
+	stmt_printer = StmtVisitor()
+	for stmt in stmts_list:
+		if stmt is not None:
+			stmt_printer.print(stmt)
 		else:
-			print('need more IMPL')
-	else:
-		print("Parser error")
-		return
+			print('none stmt')
 
+	print('\nINTERPRETATION')
+	i = Interpreter()
+	for stm in stmts_list:
+		if stm is not None:
+			i.interpret(stm)
+		else:
+			print(f'skip none stmt `{stm}`')
+
+	print()
 
 if __name__ == "__main__":
 	hadError = False

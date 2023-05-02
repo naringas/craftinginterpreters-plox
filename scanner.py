@@ -30,10 +30,10 @@ class TokenType(Enum):
 	BANG_EQUAL = '!='
 	EQUAL = '='
 	EQUAL_EQUAL = '=='
-	GREATER = '<'
-	GREATER_EQUAL = '<='
-	LESS = '>'
-	LESS_EQUAL = '>='
+	GREATER = '>'
+	GREATER_EQUAL = '>='
+	LESS = '<'
+	LESS_EQUAL = '<='
 
 	# // Literals.
 	IDENTIFIER = auto()
@@ -71,7 +71,8 @@ class Token():
 		# i dunno why -1? imma use slice objects anyways...
 
 	def __str__(self):
-		return f"[{self.ttype} '{self.lexeme}' `{self.literal}`]"
+		tname = str(self.ttype)[10:] # drop the substring 'TokenType.'
+		return f"[{tname} '{self.lexeme}' `{self.literal}`]"
 
 	def detail_pos(self):
 		return f"on line {self.line}:{self.lineloc.start}-{self.lineloc.stop}"
@@ -155,8 +156,7 @@ class Scanner():
 					if self.match('/'):
 						while self.peek() != '\n' and not self.allDone():
 							self.advance()
-					else:
-						ttype = TokenType.SLASH
+						return  # don't add any tokens in this case
 
 			self.addToken(ttype)
 
@@ -216,7 +216,9 @@ class Scanner():
 							ttype = TokenType(literal)
 						except ValueError:
 							ttype = TokenType.IDENTIFIER
-						self.addToken(ttype)
+							#stabilize the 'literal' (symbol?) name of IDENTIFIER?
+							literal = literal.lower()
+						self.addToken(ttype, literal=literal)
 					else:
 						scan_error(self.line, f'Unexpected character "{char}" '
 						f'on line {self.line}:{self.pos_slice.start}-{self.pos_slice.stop}')
