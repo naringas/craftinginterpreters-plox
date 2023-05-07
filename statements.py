@@ -30,7 +30,7 @@ class StmtVisitor(Visitor):
 
 	def print(self, stmt):
 		# Visitor.start_walk
-		print(stmt.accept(visitor=self))
+		print(f'{stmt.__class__.__name__}({stmt.accept(visitor=self)})')
 
 	def _exprVisit(self, expr):
 		return expr.accept(visitor=self.exprPrinter)

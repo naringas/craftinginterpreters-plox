@@ -25,6 +25,13 @@ class Interpreter(Visitor):
 		print(val)
 		return val
 
+	def visitStmtVar(self, stmt):
+		"""
+		stmt.name
+		stmt.initializer
+		"""
+		...
+
 	def visitLiteral(self, expr):
 		return expr.value
 

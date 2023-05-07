@@ -35,6 +35,9 @@ class TokenType(Enum):
 	LESS = '<'
 	LESS_EQUAL = '<='
 
+	QUESTION = '?'
+	COLON = ':'
+
 	# // Literals.
 	IDENTIFIER = auto()
 	STRING = auto()

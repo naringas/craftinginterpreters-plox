@@ -87,7 +87,9 @@ class Parser(ParserNav):
 	exprStmt       → expression ";" ;
 	printStmt      → "print" expression ";" ;
 
-	expression     → equality ;
+	expression     → equality |
+	                 ternary ;
+	ternary        → equality "?" expression ":" expression ;
 	equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 	comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 	term           → factor ( ( "-" | "+" ) factor )* ;
@@ -97,7 +99,7 @@ class Parser(ParserNav):
 	primary        → NUMBER | STRING | "true" | "false" | "nil"
 	               | "(" expression ")"
 	               | IDENTIFIER ;
-   """
+	"""
 
 	def __init__(self, tokens: list[Token]):
 		self.tokens = tokens
@@ -147,12 +149,29 @@ class Parser(ParserNav):
 
 	def expressionStmt(self):
 		val = self.expression()
-		assert isinstance(val, Expr)
+
+		# if val is None:
+			# val = Expr()
+			# next assert is now guaranteed... lame
+		assert isinstance(val, (Stmt, Expr)), f"{val}. repr: `"+repr(val)+"`"
+
 		self.consume(TokenType.SEMICOLON, "expected a ';' after expressionStmt. where is my  ; !?")
 		return StmtExpr(val)
 
 	def expression(self):
-		return self.equality()
+		"""
+		expression → equality |
+		             ternary ;
+		"""
+		eq = self.equality()
+
+		if self.match(TokenType.QUESTION):
+			left = self.expression()
+			self.consume(TokenType.COLON, "Expected ':' for a ternary expr.")
+			right = self.expression()
+			return Ternary(eq, left, right)
+		else:
+			return eq
 
 	def equality(self):
 		expr = self.comparison()

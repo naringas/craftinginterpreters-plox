@@ -32,6 +32,12 @@ class Unary(Expr):
 class Variable(Expr):
 	name: Token  #identifier
 
+@dataclass
+class Ternary(Expr):
+	comparison: Expr
+	left: Expr  # true evaluation, comparison must be boolean
+	right: Expr
+
 
 class AstPrinter(Visitor):
 	"""only good at printing out (and making strings) from binary expressions"""
@@ -65,6 +71,8 @@ class AstPrinter(Visitor):
 	def visitBinary(self, expr):
 		return self.parensiffy(expr.op.lexeme, expr.left, expr.right)
 
+	def visitTernary(self, expr):
+		return f'if [{expr.comparison}]; then [{expr.left}]; else [{expr.right}]'
 	"""
 	def visitExpr(self, expr):
 		return self.parensiffy(expr.expr)
