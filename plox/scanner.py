@@ -11,6 +11,10 @@ def scan_error(line: int, msg: str):
 
 @unique
 class TokenType(Enum):
+	def _generate_next_value_(name, start, count, last_values):
+		# implements "auto"....
+		return count
+
 	# // Single-character tokens.
 	LEFT_PAREN = '('
 	RIGHT_PAREN = ')'

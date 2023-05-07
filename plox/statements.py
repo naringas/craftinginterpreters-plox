@@ -25,8 +25,7 @@ class StmtVar(Stmt):
 
 
 class StmtVisitor(Visitor):
-	def __init__(self):
-		self.exprPrinter = AstPrinter()
+	exprPrinter = AstPrinter()
 
 	def print(self, stmt):
 		# Visitor.start_walk

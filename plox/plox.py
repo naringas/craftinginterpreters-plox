@@ -18,6 +18,9 @@ def runPrompt():
 			break
 		else:
 			# Interpreter().interpret(Parser(Scanner(line).scanTokens()).parse())
+			if not line.rstrip().endswith(';'):
+				print("WARNING, statements must end with a ';'.")
+				line += ';'
 			run(line)
 		hadError = False
 
@@ -29,7 +32,9 @@ def runFile(filepath):
 def run(source):
 	print('TOKENS')
 	tokens = Scanner(source).scanTokens()
-	for t in tokens:
+	if (L := len(tokens)) > 12:
+		print(f'...{L} more tokens before.')
+	for t in tokens[-12:]:
 		print(t)
 
 	print('\nSTATEMENTS')

@@ -2,11 +2,13 @@
 
 from scanner import Token, TokenType
 from expressions import *
+from statements import StmtVisitor
 
 from util import Visitor, Visitable
 
-
 class Interpreter(Visitor):
+	str_visitor = StmtVisitor()
+
 	def interpret(self, expr: Visitable):
 		assert isinstance(expr, Visitable), f'expr is {expr.__class__}'
 		val = self.evaluate(expr)
@@ -17,7 +19,8 @@ class Interpreter(Visitor):
 
 	def visitStmtExpr(self, stmt):
 		val = self.evaluate(stmt.expr)
-		print("# ", val)  # print anyways, with a '# '
+		print("# ", stmt.accept(visitor=self.str_visitor))  # print anyways, with a '# '
+		print("#->", val)  # print anyways, with a '# '
 		return val
 
 	def visitStmtPrint(self, stmt):

@@ -4,3 +4,18 @@
 print 1+2-3*4/5  ;//  saywha
 var X = 1 == 2 ? "help" : "we cool, no help";
 print (10 + (true ? 5 : -  5));
+
+print "GO ON END OF PROG, next is the end?";
+1 ? 2 : 3 ? 4 : 5;
+1 ? 2 : (3 ? 4 : 5);
+(1 ? 2 : 3) ? 4 : 5;
+
+// SOMETHING IS WRONG WITH PRECEDENCE
+// well, the ? has higher predecedence than "?"
+print 1 ? 2 : 3 ? 4 : 5 == 1 ? 2 : (3 ? 4 : 5);
+//print
+(1 ? 2 : 3 ? 4 : 5) == 1 ? 2 : (3 ? 4 : 5);
+
+print (1 ? 2 : 3 ? 4 : 5) == (1 ? 2 : (3 ? 4 : 5));
+print (1 ? 2 : 3 ? 4 : 5) == ((1 ? 2 : 3) ? 4 : 5);
+print (1 ? 2 : 3 ? 4 : 5) == ((1 ? 2 : 3) ? 4 : 5) ? "False" : "True";
