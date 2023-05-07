@@ -4,5 +4,6 @@ var test =
 
 
 "strings";
-123;
+print 123;
 123.1233; // sample, should write a real program.
+print 123+123;
