@@ -2,7 +2,7 @@
 
 from scanner import Token, TokenType
 from expressions import * #Binary, Grouping, Literal, Unary
-from statements import Stmt, StmtExpr, StmtPrint, StmtVar
+from statements import * #Stmt, StmtExpr, StmtPrint, StmtVar
 
 
 class ParserError(RuntimeError):
@@ -120,7 +120,7 @@ class Parser(ParserNav):
 		except ParserError as e:
 			parse_error(self.peek(), e.msg)
 			self.synchronize()
-			return None
+			return
 
 	def varDecl(self):
 		name: Token = self.consume(TokenType.IDENTIFIER, "Expect varirable name.")
@@ -234,7 +234,7 @@ class Parser(ParserNav):
 			return Grouping(expr)
 
 		if self.match(TokenType.IDENTIFIER):
-			return Variable(self.previous().literal)
+			return Variable(self.previous())
 
 		"""
 		if self.previous().ttype == TokenType.EOF:

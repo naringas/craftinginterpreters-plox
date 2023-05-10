@@ -73,6 +73,9 @@ class Token():
 		self.ttype = ttype
 		self.lexeme = lexeme
 		self.literal = literal   # in the java version , this is type "object"
+		# lexeme vs literal?
+		# for example in a string the literal is "asfd" (with quotes)
+		# the lexeme is just the asdf (no quote marks)
 		self.line = line
 		self.lineloc = lineloc
 		# i dunno why -1? imma use slice objects anyways...
