@@ -87,9 +87,10 @@ class Parser(ParserNav):
 	exprStmt       → expression ";" ;
 	printStmt      → "print" expression ";" ;
 
-	expression     → equality |
-	                 ternary ;
+	expression     → assignment | ternary ;
+	assignment     → IDENTIFIER "=" assignment | equality ;
 	ternary        → equality "?" expression ":" expression ;
+
 	equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 	comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 	term           → factor ( ( "-" | "+" ) factor )* ;
@@ -159,10 +160,6 @@ class Parser(ParserNav):
 		return StmtExpr(val)
 
 	def expression(self):
-		"""
-		expression → equality |
-		             ternary ;
-		"""
 		eq = self.equality()
 
 		if self.match(TokenType.QUESTION):

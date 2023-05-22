@@ -38,6 +38,10 @@ class Variable(Expr):
 	name: Token  #identifier
 
 @dataclass
+class AssignExpr(Expr):
+	name: Token  #identifier
+
+@dataclass
 class Ternary(Expr):
 	comparison: Expr
 	left: Expr  # true evaluation, comparison must be boolean

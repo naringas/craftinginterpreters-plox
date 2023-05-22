@@ -52,7 +52,7 @@ def run(source):
 		if stm is not None:
 			i.interpret(stm)
 		else:
-			print(f'skip none stmt `{stm}`')
+			print(f'skiped a none stmt `{stm}`')
 
 	print()
 
