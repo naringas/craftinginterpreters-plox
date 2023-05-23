@@ -137,7 +137,6 @@ class Interpreter(Visitor):
 		else:
 			return self.environment[expr.name.lexeme]
 
-
 	def visit(self, expr):
 		print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
 		return str(expr)

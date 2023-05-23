@@ -89,6 +89,7 @@ class Parser(ParserNav):
 
 	expression     → assignment | ternary ;
 	assignment     → IDENTIFIER "=" assignment | equality ;
+
 	ternary        → equality "?" expression ":" expression ;
 
 	equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -160,7 +161,7 @@ class Parser(ParserNav):
 		return StmtExpr(val)
 
 	def expression(self):
-		eq = self.equality()
+		eq = self.assignment()
 
 		if self.match(TokenType.QUESTION):
 			left = self.expression()
@@ -169,6 +170,19 @@ class Parser(ParserNav):
 			return Ternary(eq, left, right)
 		else:
 			return eq
+
+	def assignment(self):
+		expr = self.equality()
+		if self.match(TokenType.EQUAL):
+			equals: Token = self.previous()
+			val = sefl.assignment()
+
+			if isinstance(expr, Variable):
+				name: Token = expr.name
+				return AssignExpr(name, val)
+			else:
+				parse_error(equals, "Invalid assignment target.")
+		return expr
 
 	def equality(self):
 		expr = self.comparison()

@@ -38,8 +38,9 @@ class Variable(Expr):
 	name: Token  #identifier
 
 @dataclass
-class AssignExpr(Expr):
+class Assign(Expr):
 	name: Token  #identifier
+	value: Expr
 
 @dataclass
 class Ternary(Expr):
