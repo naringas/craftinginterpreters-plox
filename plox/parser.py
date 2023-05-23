@@ -175,11 +175,11 @@ class Parser(ParserNav):
 		expr = self.equality()
 		if self.match(TokenType.EQUAL):
 			equals: Token = self.previous()
-			val = sefl.assignment()
+			val = self.assignment()
 
 			if isinstance(expr, Variable):
 				name: Token = expr.name
-				return AssignExpr(name, val)
+				return Assign(name, val)
 			else:
 				parse_error(equals, "Invalid assignment target.")
 		return expr

@@ -1,6 +1,7 @@
 # interpreter
 
 from scanner import Token, TokenType
+from environment import Environment
 from expressions import *
 from statements import *
 
@@ -25,7 +26,7 @@ def parse_error(token: Token, msg: str):
 
 class Interpreter(Visitor):
 	str_visitor = StmtVisitor()
-	environment = dict()
+	environment = Environment()
 
 
 	def interpret(self, expr: Visitable):
@@ -56,7 +57,8 @@ class Interpreter(Visitor):
 		stmt.initializer
 		"""
 		assert isinstance(stmt, StmtVar), f'Oops, found instance of: {expr.__class__}'
-		self.environment[stmt.name.lexeme] = self.evaluate(stmt.initializer) if stmt.initializer is not None else None
+		value = self.evaluate(stmt.initializer) if stmt.initializer is not None else None
+		self.environment.define(stmt.name.lexeme, value)
 
 	def visitLiteral(self, expr):
 		return expr.value
@@ -130,12 +132,20 @@ class Interpreter(Visitor):
 		assert isinstance(expr, Variable), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name, Token), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name.lexeme, str), f'Oops, found instance of: {expr.__class__}'
-		if expr.name.lexeme not in self.environment:
+		if expr.name not in self.environment:
 			raise InterpreterError(expr.name, f"Undeclared variable.")
-		elif self.environment[expr.name.lexeme] is None:
+		elif self.environment[expr.name] is None:
+			# print(self.environment)
+			# print(expr.name)
 			raise InterpreterError(expr.name, f"Variable without a value.")
 		else:
-			return self.environment[expr.name.lexeme]
+			return self.environment[expr.name]
+
+	def visitAssign(self, expr):
+		assert isinstance(expr, Assign), f'Oops, found instance of: {expr.__class__}'
+		value = self.evaluate(expr.value)
+		self.environment[expr.name] = value
+		return value
 
 	def visit(self, expr):
 		print(f"\t!!Guessing what to do with {expr.__class__.__name__}")

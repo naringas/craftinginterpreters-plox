@@ -30,12 +30,14 @@ def runFile(filepath):
 		run(f.read())
 
 def run(source):
-	print('TOKENS')
+	# print('TOKENS')
 	tokens = Scanner(source).scanTokens()
+	'''
 	if (L := len(tokens)) > 12:
 		print(f'...{L} more tokens before.')
 	for t in tokens[-12:]:
 		print(t)
+	'''
 
 	print('\nSTATEMENTS')
 	stmts_list = Parser(tokens).parse()
