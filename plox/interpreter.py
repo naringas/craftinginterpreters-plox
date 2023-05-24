@@ -146,7 +146,7 @@ class Interpreter(Visitor):
 		return value
 
 	def visitBlock(self, stmt: Block):
-		print('BLOCK into ', self.environment)
+		# print('BLOCK into ', self.environment)
 		self.runBlock(stmt.statements, Environment(enclosing=self.environment))
 
 	def visit(self, expr):

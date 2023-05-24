@@ -51,19 +51,3 @@ class Environment(dict):
 				return key in self.enclosing
 			else:
 				raise e
-
-
-if __name__=='__main__':
-	from scanner import Token as T
-	from scanner import TokenType
-	a = Environment()
-	var_a = T(TokenType.IDENTIFIER, 'a', 'a', 0)
-	a.define('a')
-	# a[var_a]
-	"""
-	import doctest
-	>>> print(a[tA])
-	None
-	"""
-	print('DEFINE: a = env... var_a')
-

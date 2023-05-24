@@ -11,6 +11,11 @@ class Visitable:
 	def __str__(self):
 		s = f'{self.__class__.__name__}('
 		s += ", ".join((f'{f.name}={getattr(self, f.name)}' for f in fields(self)) )
+		'''
+		mypy complains that fields(self)
+		plox/util.py:13: error: Argument 1 to "fields" has incompatible type "Visitable"; expected "Union[DataclassInstance, Type[DataclassInstance]]"  [arg-type]
+
+		but all my Dataclasses stuff (Expr and Stmt), inherit from Visitable.'''
 		s += ")"
 		return s
 
