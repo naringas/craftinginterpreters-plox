@@ -42,8 +42,9 @@ class Environment(dict):
 	def __delitem__(self, key):
 		del self[key]
 
-	def __contains__(self, key: scanner.Token):
-		assert isinstance(key, scanner.Token), f"Enviroment's key must be a token, not a {key.__class__}"
+	def __contains__(self, key) -> bool:
+		if not isinstance(key, scanner.Token):
+			return False
 		try:
 			return dict.__contains__(self, key.lexeme)
 		except KeyError as e:

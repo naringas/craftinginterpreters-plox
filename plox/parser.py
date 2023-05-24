@@ -264,7 +264,7 @@ class Parser(ParserNav):
 		# raise ParserError(self.peek(), "Expected more...")
 
 
-	def block(self) -> list:
+	def block(self) -> list[Stmt]:
 		stmts = []
 		while not self.check(TokenType.RIGHT_BRACE) and not self.allDone():
 			stmts.append(self.declaration())
