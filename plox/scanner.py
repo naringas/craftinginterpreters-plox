@@ -2,9 +2,10 @@
 
 from enum import Enum, auto, unique
 
+global hadError
 
 def scan_error(line: int, msg: str):
-	global hadError
+	# global hadError
 	hadError = True
 	print(f"Error on line: {line}. {msg}")
 
@@ -18,8 +19,8 @@ class TokenType(Enum):
 	# // Single-character tokens.
 	LEFT_PAREN = '('
 	RIGHT_PAREN = ')'
-	LEFT_BRACE = '['
-	RIGHT_BRACE = ']'
+	LEFT_BRACE = '{'
+	RIGHT_BRACE = '}'
 
 	COMMA = ','
 	DOT = '.'
@@ -102,7 +103,7 @@ def isdigit(c):
 class Scanner():
 	def __init__(self, source: str):
 		self.source = source
-		self.tokens: list[TokenType] = list()
+		self.tokens: list[Token] = list()
 		# position
 		self.start = 0
 		self.current = 0

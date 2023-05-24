@@ -21,8 +21,11 @@ class StmtPrint(Stmt):
 @dataclass
 class StmtVar(Stmt):
 	name: Token
-	initializer: Expr
+	initializer: Expr | None
 
+@dataclass
+class Block(Stmt):
+	statements: list  #TODO how to annotate?
 
 class StmtVisitor(Visitor):
 	exprPrinter = AstPrinter()

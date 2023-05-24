@@ -7,6 +7,7 @@ from statements import *
 
 from util import Visitor, Visitable
 
+global hadError
 
 class InterpreterError(RuntimeError):
 	def __init__(self, token: Token, msg: str, *args, **kwargs):
@@ -17,7 +18,6 @@ class InterpreterError(RuntimeError):
 
 
 def parse_error(token: Token, msg: str):
-	global hadError
 	hadError = True
 	if token.ttype == TokenType.EOF:
 		print(f'Error at line {token.line} at end.', msg)
@@ -28,7 +28,6 @@ class Interpreter(Visitor):
 	str_visitor = StmtVisitor()
 	environment = Environment()
 
-
 	def interpret(self, expr: Visitable):
 		assert isinstance(expr, Visitable), f'expr is {expr.__class__}'
 		try:
@@ -37,7 +36,7 @@ class Interpreter(Visitor):
 		except InterpreterError as e:
 			parse_error(e.token, e.msg)
 
-	def evaluate(self, expr):
+	def evaluate(self, expr):  # AKA execute
 		return expr.accept(visitor=self)
 
 	def visitStmtExpr(self, stmt):
@@ -56,7 +55,7 @@ class Interpreter(Visitor):
 		stmt.name
 		stmt.initializer
 		"""
-		assert isinstance(stmt, StmtVar), f'Oops, found instance of: {expr.__class__}'
+		assert isinstance(stmt, StmtVar), f'Oops, found instance of: {stmt.__class__}'
 		value = self.evaluate(stmt.initializer) if stmt.initializer is not None else None
 		self.environment.define(stmt.name.lexeme, value)
 
@@ -132,14 +131,13 @@ class Interpreter(Visitor):
 		assert isinstance(expr, Variable), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name, Token), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name.lexeme, str), f'Oops, found instance of: {expr.__class__}'
-		if expr.name not in self.environment:
+		try:
+			var_value = self.environment[expr.name]
+		except KeyError:# as e:
 			raise InterpreterError(expr.name, f"Undeclared variable.")
-		elif self.environment[expr.name] is None:
-			# print(self.environment)
-			# print(expr.name)
+		if var_value is None:
 			raise InterpreterError(expr.name, f"Variable without a value.")
-		else:
-			return self.environment[expr.name]
+		return self.environment[expr.name]
 
 	def visitAssign(self, expr):
 		assert isinstance(expr, Assign), f'Oops, found instance of: {expr.__class__}'
@@ -147,6 +145,20 @@ class Interpreter(Visitor):
 		self.environment[expr.name] = value
 		return value
 
+	def visitBlock(self, stmt: Block):
+		print('BLOCK into ', self.environment)
+		self.runBlock(stmt.statements, Environment(enclosing=self.environment))
+
 	def visit(self, expr):
 		print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
 		return str(expr)
+
+	#...
+	def runBlock(self, stmts: list, env: Environment):
+		above_orig_env = self.environment
+		self.environment = env
+		try:
+			for stmt in stmts:
+				self.evaluate(stmt)
+		finally:
+			self.environment = above_orig_env

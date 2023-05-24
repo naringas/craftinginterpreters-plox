@@ -2,8 +2,9 @@
 
 from scanner import Token, TokenType
 from expressions import * #Binary, Grouping, Literal, Unary
-from statements import * #Stmt, StmtExpr, StmtPrint, StmtVar
+from statements import * #Stmt, StmtExpr, StmtPrint, StmtVar, Block
 
+global hadError
 
 class ParserError(RuntimeError):
 	def __init__(self, token: Token, msg: str, *args, **kwargs):
@@ -14,7 +15,6 @@ class ParserError(RuntimeError):
 
 
 def parse_error(token: Token, msg: str):
-	global hadError
 	hadError = True
 	if token.ttype == TokenType.EOF:
 		print(f'Error at line {token.line} at end.', msg)
@@ -83,9 +83,10 @@ class Parser(ParserNav):
 	declaration    → (varDecl | statement) ;
 
 	varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-	statement      → (exprStmt | printStmt) ;
+	statement      → (exprStmt | printStmt | block) ;
 	exprStmt       → expression ";" ;
 	printStmt      → "print" expression ";" ;
+	block          → "{" declaration* "}"
 
 	expression     → assignment | ternary ;
 	assignment     → IDENTIFIER "=" assignment | equality ;
@@ -126,9 +127,9 @@ class Parser(ParserNav):
 
 	def varDecl(self):
 		name: Token = self.consume(TokenType.IDENTIFIER, "Expect varirable name.")
-		initer = None
+		initer: Expr|None = None
 		if self.match(TokenType.EQUAL):
-			initer: Expr = self.expression()
+			initer = self.expression()
 
 		self.consume(TokenType.SEMICOLON, "Expected ; after variable declaration.")
 		return StmtVar(name, initer)
@@ -136,6 +137,8 @@ class Parser(ParserNav):
 	def statement(self):
 		if self.match(TokenType.PRINT):
 			return self.printStmt()
+		elif self.match(TokenType.LEFT_BRACE):
+			return Block(self.block())
 		else:
 			return self.expressionStmt()
 
@@ -150,12 +153,12 @@ class Parser(ParserNav):
 		# assert isinstance(val, Expr), f'val is {val.__class__}'
 
 	def expressionStmt(self):
-		val = self.expression()
+		val : Expr = self.expression()
 
 		# if val is None:
 			# val = Expr()
 			# next assert is now guaranteed... lame
-		assert isinstance(val, (Stmt, Expr)), f"{val}. repr: `"+repr(val)+"`"
+		assert isinstance(val, Expr), f"{val}. repr: `"+repr(val)+"`"
 
 		self.consume(TokenType.SEMICOLON, "expected a ';' after expressionStmt. where is my  ; !?")
 		return StmtExpr(val)
@@ -259,3 +262,12 @@ class Parser(ParserNav):
 
 		parse_error(self.peek(), "In the end, we expected more INPUT...")
 		# raise ParserError(self.peek(), "Expected more...")
+
+
+	def block(self) -> list:
+		stmts = []
+		while not self.check(TokenType.RIGHT_BRACE) and not self.allDone():
+			stmts.append(self.declaration())
+
+		self.consume(TokenType.RIGHT_BRACE, "expected closing '}'.")
+		return stmts
