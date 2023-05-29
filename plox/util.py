@@ -2,7 +2,7 @@
 from dataclasses import fields, asdict
 
 
-class Visitable:
+class Visitable:  #somehow tell mypy that this is a mixin that will be used in a Dataclass instance ALWAYS
 	def accept(self, visitor):
 		assert isinstance(visitor, Visitor)
 		method = getattr(visitor, f'visit{self.__class__.__name__}', visitor.visit)

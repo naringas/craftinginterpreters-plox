@@ -24,6 +24,12 @@ class StmtVar(Stmt):
 	initializer: Expr | None
 
 @dataclass
+class StmtIf(Stmt):
+	condition : Expr
+	thenBranch: Stmt
+	elseBranch: Stmt | None
+
+@dataclass
 class Block(Stmt):
 	statements: list  #TODO how to annotate?
 

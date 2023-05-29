@@ -116,11 +116,7 @@ class Interpreter(Visitor):
 				return l == r
 		#unreachable "return None"
 
-	def visitTernary(self, expr):
-		# assert isinstance(expr.comparison, ??? and somehow assert it's boolean
-		assert isinstance(expr.left, Expr)
-		assert isinstance(expr.right, Expr)
-
+	def visitIfStmt(self, expr):
 		if self.evaluate(expr.comparison):
 			return self.evaluate(expr.left)
 		else:
