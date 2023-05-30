@@ -123,6 +123,10 @@ class Interpreter(Visitor):
 			return self.evaluate(expr.right)
 		# this feels a bit silly
 
+	def visitStmtWhile(self, stmt):
+		while self.evaluate(stmt.condition):
+			self.evaluate(stmt.body)
+
 	def visitVariable(self, expr):
 		assert isinstance(expr, Variable), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name, Token), f'Oops, found instance of: {expr.__class__}'
@@ -145,11 +149,17 @@ class Interpreter(Visitor):
 		# print('BLOCK into ', self.environment)
 		self.runBlock(stmt.statements, Environment(enclosing=self.environment))
 
-	def visit(self, expr):
-		print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
-		return str(expr)
+	def visitLogical(self, expr: Logical):
+		left = self.evaluate(expr.left)
 
-	#...
+		if expr.op.ttype == TokenType.OR:
+			if left:
+				return left
+		elif expr.op.ttype == TokenType.AND:
+			if not left:
+				return left  # because it already is falsey
+		return self.evaluate(expr.right)
+
 	def runBlock(self, stmts: list, env: Environment):
 		above_orig_env = self.environment
 		self.environment = env
@@ -158,3 +168,8 @@ class Interpreter(Visitor):
 				self.evaluate(stmt)
 		finally:
 			self.environment = above_orig_env
+
+
+	def visit(self, expr):
+		print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
+		return str(expr)

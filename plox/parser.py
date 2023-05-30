@@ -86,20 +86,24 @@ class Parser:
 	program        → declaration* EOF ;
 	declaration    → (varDecl | statement) ;
 
-	varDecl        → "var" IDENTIFIER  "=" expression)? ";" ;
+	varDecl        → "var" IDENTIFIER  ("=" expression)? ";" ;
 	statement      → exprStmt
 	               | ifStmt
 	               | printStmt
+	               | whileStmt
 	               | block ;
 	exprStmt       → expression ";" ;
 	printStmt      → "print" expression ";" ;
+	ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
+	whileStmt      → "while" "(" expression ")" statement ;
 	block          → "{" declaration* "}"
 
 	expression     → assignment ;
-	assignment     → IDENTIFIER "=" assignment | equality ;
+	assignment     → IDENTIFIER "=" assignment
+	               | logic_or ;
 
-	ifStmt        → "if" "(" expression ")" statement ("else" statement)? ;
-
+	logic_or       → logic_and ( "or" logic_and )* ;
+	logic_and      → equality ( "and" equality )* ;
 	equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 	comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 	term           → factor ( ( "-" | "+" ) factor )* ;
@@ -139,12 +143,10 @@ class Parser:
 
 	def statement(self) -> Stmt:
 		if self.match(TokenType.IF): return self.ifStatement()
-		if self.match(TokenType.PRINT):
-			return self.printStmt()
-		elif self.match(TokenType.LEFT_BRACE):
-			return Block(self.block())
-		else:
-			return self.expressionStmt()
+		if self.match(TokenType.PRINT): return self.printStmt()
+		if self.match(TokenType.WHILE): return self.while_()
+		if self.match(TokenType.LEFT_BRACE): return Block(self.block())
+		return self.expressionStmt()
 
 	def ifStatement(self) -> StmtIf:
 		self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
@@ -168,6 +170,14 @@ class Parser:
 			return StmtPrint(val)
 		# assert isinstance(val, Expr), f'val is {val.__class__}'
 
+	def while_(self) -> StmtWhile:
+		self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
+		cond = self.expression()
+		self.consume(TokenType.RIGHT_PAREN, "Expect ')' after 'while'.")
+		body = self.statement()
+
+		return StmtWhile(cond, body)
+
 	def expressionStmt(self) -> StmtExpr:
 		val : Expr = self.expression()
 
@@ -183,7 +193,7 @@ class Parser:
 		return self.assignment()
 
 	def assignment(self) -> Expr:
-		expr = self.equality()
+		expr = self.or_()
 		if self.match(TokenType.EQUAL):
 			equals: Token = self.previous()
 			val = self.assignment()
@@ -193,6 +203,26 @@ class Parser:
 				return Assign(name, val)
 			else:
 				parse_error(equals, "Invalid assignment target.")
+		return expr
+
+	def or_(self) -> Expr:
+		expr = self.and_()
+
+		while self.match(TokenType.OR):
+			op : Token = self.previous()
+			right = self.and_()
+			expr = Logical(expr, op, right)
+
+		return expr
+
+	def and_(self) -> Expr:
+		expr = self.equality()
+
+		while self.match(TokenType.AND):
+			op = self.previous()
+			right = self.equality()
+			expr = Logical(expr, op, right)
+
 		return expr
 
 	def equality(self) -> Expr:

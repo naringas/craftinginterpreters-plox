@@ -30,6 +30,11 @@ class StmtIf(Stmt):
 	elseBranch: Stmt | None
 
 @dataclass
+class StmtWhile(Stmt):
+	condition: Expr
+	body: Stmt
+
+@dataclass
 class Block(Stmt):
 	statements: list  #TODO how to annotate?
 

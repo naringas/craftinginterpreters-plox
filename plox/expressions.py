@@ -42,6 +42,12 @@ class Assign(Expr):
 	name: Token  #identifier
 	value: Expr
 
+@dataclass
+class Logical(Expr):
+	left: Expr
+	op: Token
+	right: Expr
+
 
 class AstPrinter(Visitor):
 	"""only good at printing out (and making strings) from binary expressions"""
