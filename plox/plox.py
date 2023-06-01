@@ -44,7 +44,7 @@ def run(source):
 	stmt_printer = StmtVisitor()
 	for stmt in stmts_list:
 		if stmt is not None:
-			stmt_printer.print(stmt)
+			print(StmtVisitor().start_walk(stmt))
 		else:
 			print('none stmt')
 

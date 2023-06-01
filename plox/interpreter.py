@@ -55,7 +55,11 @@ class Interpreter(Visitor):
 		stmt.initializer
 		"""
 		value = self.evaluate(stmt.initializer) if stmt.initializer is not None else None
-		self.environment.define(stmt.name, value)
+
+		try:
+			self.environment.define(stmt.name, value)
+		except KeyError as e:
+			raise InterpreterError(stmt.name, "Variable was already declared")
 
 	def visitLiteral(self, expr: Literal):
 		return expr.value
@@ -114,11 +118,12 @@ class Interpreter(Visitor):
 				return l == r
 		#unreachable "return None"
 
-	def visitIfStmt(self, expr):
-		if self.evaluate(expr.comparison):
-			return self.evaluate(expr.left)
+	def visitStmtIf(self, stmt: StmtIf):
+		if self.evaluate(stmt.condition):
+			return self.evaluate(stmt.thenBranch)
 		else:
-			return self.evaluate(expr.right)
+			if stmt.elseBranch is not None:
+				return self.evaluate(stmt.elseBranch)
 		# this feels a bit silly
 
 	def visitStmtWhile(self, stmt):
@@ -173,6 +178,6 @@ class Interpreter(Visitor):
 
 
 	def visit(self, expr):
-		raise InterpreterError(None, f"know not what to do with {expr.__class__.__name__}")
+		raise NotImplementedError(f"know not what to do with {expr.__class__.__name__}")
 		# print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
 		# return str(expr)

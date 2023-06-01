@@ -54,26 +54,21 @@ class StmtVisitor(Visitor):
 	def visitStmtExpr(self, stmt):
 		return self.exprPrinter.start_walk(stmt.expr)
 
-	'''
-	def visitStmtPrint(self, stmt):
-		return self._exprVisit(stmt.expr)
-
-	'''
-
 	def visitBlock(self, stmt) -> str :
-		s = '{\n'
+		s = 'BLOCK{\n'
 		stmt_strings: list[str] = ["\t"+self.start_walk(s) for s in stmt.statements]
 		s += "\n".join(stmt_strings)
-		s += '}'
+		s += '\n}ENDblock'
 		return s
 
 	def visitStmtIf(self, stmt):
 		s = f'IF {self.exprPrinter.start_walk(stmt.condition)}'
 		s += f'\nTHEN {self.start_walk(stmt.thenBranch)}'
 		s += '' if stmt.elseBranch is None else f'\nELSE {self.start_walk(stmt.elseBranch)}'
+		return s
 
 	def visitStmtWhile(self, stmt):
-		return (f'WHILE {self.exprPrinter.start_walk(stmt.condition)}\nDO'
+		return (f'WHILE {self.exprPrinter.start_walk(stmt.condition)}\nDO \t'
 			 + self.start_walk(stmt.body))
 
 	def visitStmt(self, stmt):
