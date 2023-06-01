@@ -10,23 +10,21 @@ class Environment(dict):
 		self.enclosing = enclosing
 
 	def __str__(self):
+		s = dict.__str__(self)
 		if self.enclosing is not None:
-			s = 'SupEnv'
-			s+= dict.__str__(self.enclosing)
 			s += '\n\tEnv'
-			s+= dict.__str__(self)
-			return s
-		else:
-			return 'Env' + dict.__str__(self)
+			s+= str(self.enclosing)
 
-	def define(self, name: str, value=None):
-		assert isinstance(name, str), "Enviroment variable name must be a string"
-		# print ('!!!DEBUG set ', name, ' to ', value)
-		dict.__setitem__(self, name, value)
+		return s
+
+	def define(self, key: scanner.Token, value=None):
+		if dict.__contains__(self, key.lexeme):
+			raise KeyError("cannot define the same thing twice. do a regular assign")
+		dict.__setitem__(self, key.lexeme, value)
 
 	def __getitem__(self, key: scanner.Token):
 		assert isinstance(key, scanner.Token), f"Enviroment's key must be a token, not a {key.__class__}"
-		# strage... the keys are strings, but set as tokens? or smthin
+
 		try:
 			return dict.__getitem__(self, key.lexeme)
 		except KeyError as e:
@@ -35,20 +33,38 @@ class Environment(dict):
 			else:
 				raise e
 
-	def __setitem__(self, key: scanner.Token, val):
+	def __setitem__(self, key: scanner.Token, val) -> None:
 		assert isinstance(key, scanner.Token), f"Enviroment's key must be a token, not a {key.__class__}"
-		return dict.__setitem__(self, key.lexeme, val)
 
-	def __delitem__(self, key):
+		if dict.__contains__(self, key.lexeme):
+			dict.__setitem__(self, key.lexeme, val)
+			return
+
+		if self.enclosing is not None:
+			self.enclosing[key] = val
+			return
+
+		raise KeyError
+
+	def __delitem__(self, key: scanner.Token):
 		del self[key]
 
 	def __contains__(self, key) -> bool:
 		if not isinstance(key, scanner.Token):
 			return False
-		try:
-			return dict.__contains__(self, key.lexeme)
-		except KeyError as e:
-			if self.enclosing is not None:
-				return key in self.enclosing
-			else:
-				raise e
+
+		return (dict.__contains__(self, key.lexeme)
+			or (key in self.enclosing if self.enclosing is not None else False))
+
+
+'''
+tvar = scanner.Token(scanner.TokenType.IDENTIFIER, "a", "a", 0)
+bvar = scanner.Token(scanner.TokenType.IDENTIFIER, "b", "b", 10)
+top = Environment()
+sub1 = Environment(enclosing=top)
+sub2 = Environment(enclosing=sub1)
+
+# top.define(tvar, "TOP")
+# sub2.define(bvar, "bot000")
+
+'''

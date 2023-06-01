@@ -1,8 +1,12 @@
 # parser.py
+import pdb
+
+from typing import Optional
 
 from scanner import Token, TokenType
 from expressions import * #Binary, Grouping, Literal, Unary
 from statements import * #Stmt, StmtExpr, StmtPrint, StmtVar, Block
+from util import Visitor
 
 global hadError
 
@@ -22,10 +26,10 @@ def parse_error(token: Token, msg: str):
 		print(f'Error at line {token.detail_pos()} "{token.lexeme}".', msg);
 
 
-class Parser:
+class Parser():
 	def __init__(self, tokens: list[Token]):
 		self.tokens = tokens
-		self.current : int= 0
+		self.current : int = 0
 
 	# Navigation
 	def advance(self) -> Token:
@@ -84,15 +88,23 @@ class Parser:
 	# the parsing itself:
 	"""
 	program        → declaration* EOF ;
-	declaration    → (varDecl | statement) ;
+	declaration    → (varDecl | funDecl | statement) ;
 
 	varDecl        → "var" IDENTIFIER  ("=" expression)? ";" ;
+	funDecl        → "fun" IDENTIFIER  "(" parameters? ")" ";" ;
+	parameters     → IDENTIFIER ( "," IDENTIFIER )* ;     // a list of IDENTIFIERS
+
 	statement      → exprStmt
+	               | forStmt
 	               | ifStmt
 	               | printStmt
 	               | whileStmt
 	               | block ;
-	exprStmt       → expression ";" ;
+	exprStmt       → expression ";" ;                     // a grouping-alike
+	forStmt        → "for" "("
+	                    (varDecl | exprStmt | ";")
+	                    expression? ";"
+	                    expression? ")" statement ;
 	printStmt      → "print" expression ";" ;
 	ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
 	whileStmt      → "while" "(" expression ")" statement ;
@@ -108,8 +120,9 @@ class Parser:
 	comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 	term           → factor ( ( "-" | "+" ) factor )* ;
 	factor         → unary ( ( "/" | "*" ) unary )* ;
-	unary          → ( "!" | "-" ) unary
-	               | primary ;
+	unary          → ( "!" | "-" ) unary | call ;
+	call           → primary ( "(" arguments? ")" )* ;
+	arguments      → expression ( "," expression )* ;
 	primary        → NUMBER | STRING | "true" | "false" | "nil"
 	               | "(" expression ")"
 	               | IDENTIFIER ;
@@ -119,10 +132,12 @@ class Parser:
 		"""public endpoint method"""
 		statements = []
 		while not self.allDone():
-			statements.append(self.declaration())
+			decl = self.declaration()
+			if decl is not None:
+				statements.append(decl)
 		return statements
 
-	def declaration(self) -> Stmt:
+	def declaration(self) -> Stmt|None:
 		try:
 			if self.match(TokenType.VAR):
 				return self.varDecl()
@@ -130,7 +145,7 @@ class Parser:
 		except ParserError as e:
 			parse_error(self.peek(), e.msg)
 			self.synchronize()
-		return Stmt()  #the "null" Stmt
+		return None # wtf mypy... make the None explicit.ffs #Stmt()  #the "null" Stmt
 
 	def varDecl(self) -> StmtVar:
 		name: Token = self.consume(TokenType.IDENTIFIER, "Expect varirable name.")
@@ -142,11 +157,55 @@ class Parser:
 		return StmtVar(name, initer)
 
 	def statement(self) -> Stmt:
+		if self.match(TokenType.FOR): return self.forStatement()
 		if self.match(TokenType.IF): return self.ifStatement()
 		if self.match(TokenType.PRINT): return self.printStmt()
 		if self.match(TokenType.WHILE): return self.while_()
 		if self.match(TokenType.LEFT_BRACE): return Block(self.block())
 		return self.expressionStmt()
+
+	def forStatement(self) -> Stmt:
+		# de-sugaring into while
+		self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.")
+
+		# initializer
+		initializer : Optional[Stmt] = None
+		if self.match(TokenType.SEMICOLON):
+			initializer = None  #null or void or empty Stmt
+		elif self.match(TokenType.VAR):
+			initializer = self.varDecl()
+		else:
+			initializer = self.expressionStmt()
+
+		condition = None
+		if not self.check(TokenType.SEMICOLON):
+			condition = self.expression()
+		self.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.")
+
+		increment = None
+		if not self.check(TokenType.RIGHT_PAREN):
+			increment = self.expression()
+		self.consume(TokenType.RIGHT_PAREN, "Expect ')' after 'for' clauses.")
+
+		# print('!! init\n\t', StmtVisitor().start_walk(initializer if initializer is not None else Stmt()))
+		# print('!! cond\n\t', AstPrinter().start_walk(condition if condition is not None else Expr()))
+		# print('!! incr\n\t', AstPrinter().start_walk(increment if increment is not None else Expr()))
+		body: Stmt = self.statement()
+
+		# print('!! origi body\n\t', StmtVisitor().start_walk(body))
+
+		if increment is not None:
+			body = Block([body, StmtExpr(increment)])
+
+		if condition is None:
+			condition = Literal(True)
+		body = StmtWhile(condition, body)
+
+		if initializer is not None:
+			body = Block([initializer, body])
+
+		# print('\n!! body', StmtVisitor().start_walk(body), '\nendbody')
+		return body
 
 	def ifStatement(self) -> StmtIf:
 		self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
@@ -178,15 +237,19 @@ class Parser:
 
 		return StmtWhile(cond, body)
 
+	def block(self) -> list[Stmt]:
+		stmts = []
+		while not self.check(TokenType.RIGHT_BRACE) and not self.allDone():
+			decl = self.declaration()
+			if decl is not None:
+				stmts.append(decl)
+
+		self.consume(TokenType.RIGHT_BRACE, "expected closing '}'.")
+		return stmts
+
 	def expressionStmt(self) -> StmtExpr:
 		val : Expr = self.expression()
-
-		# if val is None:
-			# val = Expr()
-			# next assert is now guaranteed... lame
-		assert isinstance(val, Expr), f"{val}. repr: `"+repr(val)+"`"
-
-		self.consume(TokenType.SEMICOLON, "expected a ';' after expressionStmt. where is my  ; !?")
+		self.consume(TokenType.SEMICOLON, "expected a ';' after expressionStmt.")
 		return StmtExpr(val)
 
 	def expression(self) -> Expr:
@@ -267,9 +330,32 @@ class Parser:
 			op = self.previous()
 			right = self.unary()
 			return Unary(op, right)
+		# return self.call() # NOTYET
 		return self.primary()
 
-	def primary(self):
+	def call(self) -> Expr:
+		expr: Expr = self.primary()
+
+		while True:
+			if self.match(TokenType.LEFT_PAREN):
+				expr = self.finishCall(expr)
+			else:
+				break
+		return expr
+
+	def finishCall(self, callee: Expr):
+		arguments : list[Expr] = []
+		if not self.check(TokenType.RIGHT_PAREN):
+			arguments.append(self.expression())
+			while self.match(TokenType.COMMA):
+				arguments.append(self.expression())
+				if len(arguments) >= 255:
+					raise ParserError(self.peek(), "Can't have more than 255 arguments.")
+		paren: Token = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+
+		return Call(callee, paren, arguments)
+
+	def primary(self) -> Expr:
 		if self.match(TokenType.FALSE):
 			return Literal(False)
 		if self.match(TokenType.TRUE):
@@ -288,24 +374,17 @@ class Parser:
 		if self.match(TokenType.IDENTIFIER):
 			return Variable(self.previous())
 
-		"""
-		if self.previous().ttype == TokenType.EOF:
-			# Y we no done?
-			return Expr()
-		"""
+		parse_error(self.peek(), f"Expected more input... near {self.peek()} token#{self.current}")
 		if self.match(TokenType.SEMICOLON):
-			return Stmt()
-		if self.match(TokenType.EOF):
+			raise ParserError(self.peek(), "a lone ';' is a syntax error?")
+		return Expr()  #null or empty expression.
+		'''
 			return Expr()  # the void or empty or null expression
 
-		parse_error(self.peek(), "In the end, we expected more INPUT...")
-		# raise ParserError(self.peek(), "Expected more...")
-
-
-	def block(self) -> list[Stmt]:
-		stmts = []
-		while not self.check(TokenType.RIGHT_BRACE) and not self.allDone():
-			stmts.append(self.declaration())
-
-		self.consume(TokenType.RIGHT_BRACE, "expected closing '}'.")
-		return stmts
+		try:
+			raise ParserError(self.peek(), "Expected more input...")
+		except ParserError:
+			import pdb
+			pdb.set_trace()
+			raise
+		'''

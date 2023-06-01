@@ -18,7 +18,7 @@ def runPrompt():
 			break
 		else:
 			# Interpreter().interpret(Parser(Scanner(line).scanTokens()).parse())
-			if not line.rstrip().endswith(';'):
+			if False and not line.rstrip().endswith('}') and not line.rstrip().endswith(';'):
 				print("WARNING, statements must end with a ';'.")
 				line += ';'
 			run(line)

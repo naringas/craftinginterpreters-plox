@@ -1,12 +1,12 @@
 # expressions.py
+from abc import ABC
 from dataclasses import dataclass, fields
 
 from scanner import Token, TokenType
 from util import Visitable, Visitor
 
 
-@dataclass
-class Expr(Visitable):
+class Expr(ABC, Visitable):
 	# what if I put a Token here, the token that started this Expr for any Expr.
 	# in some cases it'll be a TokenType like VAR
 	# in others, it'll be an IDENTIFIER or LITERAL. just the first token in thing.
@@ -48,6 +48,12 @@ class Logical(Expr):
 	op: Token
 	right: Expr
 
+@dataclass
+class Call(Expr):
+	callee: Expr
+	paren: Token
+	args: list[Expr]
+
 
 class AstPrinter(Visitor):
 	"""only good at printing out (and making strings) from binary expressions"""
@@ -85,11 +91,12 @@ class AstPrinter(Visitor):
 		return (f'if [{expr.comparison.accept(visitor=self)}]; '
 			f'then [{expr.left.accept(visitor=self)}]; '
 			f'else [{expr.right.accept(visitor=self)}]')
+
 	"""
 	def visitExpr(self, expr):
 		return self.parensiffy(expr.expr)
+	"""
 
 	def visit(self, expr):
 		# print(f"\t!!def visit of {expr}")
 		return str(expr)
-	"""

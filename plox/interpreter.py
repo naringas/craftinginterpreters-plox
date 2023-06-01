@@ -5,7 +5,7 @@ from environment import Environment
 from expressions import *
 from statements import *
 
-from util import Visitor, Visitable
+from util import Visitable, Visitor
 
 global hadError
 
@@ -25,7 +25,6 @@ def parse_error(token: Token, msg: str):
 		print(f'Error at line {token.detail_pos()} "{token.lexeme}".', msg);
 
 class Interpreter(Visitor):
-	str_visitor = StmtVisitor()
 	environment = Environment()
 
 	def interpret(self, expr: Visitable):
@@ -50,16 +49,15 @@ class Interpreter(Visitor):
 		print(val)
 		return val
 
-	def visitStmtVar(self, stmt):
+	def visitStmtVar(self, stmt: StmtVar):
 		"""
 		stmt.name
 		stmt.initializer
 		"""
-		assert isinstance(stmt, StmtVar), f'Oops, found instance of: {stmt.__class__}'
 		value = self.evaluate(stmt.initializer) if stmt.initializer is not None else None
-		self.environment.define(stmt.name.lexeme, value)
+		self.environment.define(stmt.name, value)
 
-	def visitLiteral(self, expr):
+	def visitLiteral(self, expr: Literal):
 		return expr.value
 
 	def visitGrouping(self, expr):
@@ -127,7 +125,7 @@ class Interpreter(Visitor):
 		while self.evaluate(stmt.condition):
 			self.evaluate(stmt.body)
 
-	def visitVariable(self, expr):
+	def visitVariable(self, expr: Variable):
 		assert isinstance(expr, Variable), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name, Token), f'Oops, found instance of: {expr.__class__}'
 		assert isinstance(expr.name.lexeme, str), f'Oops, found instance of: {expr.__class__}'
@@ -137,16 +135,20 @@ class Interpreter(Visitor):
 			raise InterpreterError(expr.name, f"Undeclared variable.")
 		if var_value is None:
 			raise InterpreterError(expr.name, f"Variable without a value.")
-		return self.environment[expr.name]
 
-	def visitAssign(self, expr):
+		return var_value
+
+	def visitAssign(self, expr: Assign):
 		assert isinstance(expr, Assign), f'Oops, found instance of: {expr.__class__}'
+
 		value = self.evaluate(expr.value)
-		self.environment[expr.name] = value
+		try:
+			self.environment[expr.name] = value
+		except KeyError:
+			raise InterpreterError(expr.name, f"Undeclared variable.")
 		return value
 
 	def visitBlock(self, stmt: Block):
-		# print('BLOCK into ', self.environment)
 		self.runBlock(stmt.statements, Environment(enclosing=self.environment))
 
 	def visitLogical(self, expr: Logical):
@@ -171,5 +173,6 @@ class Interpreter(Visitor):
 
 
 	def visit(self, expr):
-		print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
-		return str(expr)
+		raise InterpreterError(None, f"know not what to do with {expr.__class__.__name__}")
+		# print(f"\t!!Guessing what to do with {expr.__class__.__name__}")
+		# return str(expr)
