@@ -68,11 +68,14 @@ class StmtVisitor(Visitor):
 		return s
 
 	def visitStmtWhile(self, stmt):
-		return (f'WHILE {self.exprPrinter.start_walk(stmt.condition)}\nDO \t'
+		return (f'WHILE {self.exprPrinter.start_walk(stmt.condition)}\nDO\t'
 			 + self.start_walk(stmt.body))
 
 	def visitStmt(self, stmt):
 		return 'Stmt()'
 
 	def visit(self, stmt):
+		if isinstance(stmt, Expr):
+			return self.exprPrinter.start_walk(stmt)
+
 		return str(stmt)

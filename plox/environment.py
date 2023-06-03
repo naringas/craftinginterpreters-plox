@@ -17,10 +17,10 @@ class Environment(dict):
 
 		return s
 
-	def define(self, key: scanner.Token, value=None):
-		if dict.__contains__(self, key.lexeme):
+	def define(self, key: scanner.Token|str, value=None):
+		if dict.__contains__(self, key if isinstance(key, str) else key.lexeme):
 			raise KeyError("cannot define the same thing twice. do a regular assign")
-		dict.__setitem__(self, key.lexeme, value)
+		dict.__setitem__(self, key if isinstance(key, str) else key.lexeme, value)
 
 	def __getitem__(self, key: scanner.Token):
 		assert isinstance(key, scanner.Token), f"Enviroment's key must be a token, not a {key.__class__}"

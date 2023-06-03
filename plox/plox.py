@@ -39,8 +39,9 @@ def run(source):
 		print(t)
 	'''
 
-	print('\nSTATEMENTS')
 	stmts_list = Parser(tokens).parse()
+
+	print('\nSTATEMENTS')
 	stmt_printer = StmtVisitor()
 	for stmt in stmts_list:
 		if stmt is not None:

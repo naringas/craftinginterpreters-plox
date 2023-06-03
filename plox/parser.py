@@ -1,6 +1,4 @@
 # parser.py
-import pdb
-
 from typing import Optional
 
 from scanner import Token, TokenType
@@ -297,7 +295,7 @@ class Parser():
 			expr = Binary(expr, op, right)
 		return expr
 
-	def comparison(self):
+	def comparison(self) -> Expr:
 		expr = self.term()
 
 		while self.match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS,
@@ -307,7 +305,7 @@ class Parser():
 			expr = Binary(expr, op, right)
 		return expr
 
-	def term(self):
+	def term(self) -> Expr:
 		expr = self.factor()
 
 		while self.match(TokenType.MINUS, TokenType.PLUS):
@@ -316,7 +314,7 @@ class Parser():
 			expr = Binary(expr, op, right)
 		return expr
 
-	def factor(self):
+	def factor(self) -> Expr:
 		expr = self.unary()
 
 		while self.match(TokenType.SLASH, TokenType.STAR):
@@ -325,13 +323,12 @@ class Parser():
 			expr = Binary(expr, op, right)
 		return expr
 
-	def unary(self):
+	def unary(self) -> Expr:
 		if self.match(TokenType.BANG, TokenType.MINUS):
 			op = self.previous()
 			right = self.unary()
 			return Unary(op, right)
-		# return self.call() # NOTYET
-		return self.primary()
+		return self.call()
 
 	def call(self) -> Expr:
 		expr: Expr = self.primary()
@@ -349,7 +346,7 @@ class Parser():
 			arguments.append(self.expression())
 			while self.match(TokenType.COMMA):
 				arguments.append(self.expression())
-				if len(arguments) >= 255:
+				if len(arguments) >= 254:  # +1 already appended
 					raise ParserError(self.peek(), "Can't have more than 255 arguments.")
 		paren: Token = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
 

@@ -5,7 +5,8 @@ from environment import Environment
 from expressions import *
 from statements import *
 
-from util import Visitable, Visitor
+import libplox
+from util import PloxCallable, Visitable, Visitor
 
 global hadError
 
@@ -25,7 +26,11 @@ def parse_error(token: Token, msg: str):
 		print(f'Error at line {token.detail_pos()} "{token.lexeme}".', msg);
 
 class Interpreter(Visitor):
-	environment = Environment()
+
+	def __init__(self):
+		self.environment = Environment()
+		self.globals = self.environment
+		self.globals.define("clock", libplox.clock())
 
 	def interpret(self, expr: Visitable):
 		assert isinstance(expr, Visitable), f'expr is {expr.__class__}'
@@ -176,6 +181,15 @@ class Interpreter(Visitor):
 		finally:
 			self.environment = above_orig_env
 
+	def visitCall(self, expr: Call):
+		callee: PloxCallable = self.evaluate(expr.callee)
+		args = [self.evaluate(a) for a in expr.args]
+
+		# TODO ensure callee is reall callable
+		# assert isinstance(callee, PloxCallable)
+		if len(args) != callee.arity:
+			raise InterpreterError(expr.paren, "wrong argument count")
+		return callee.call(interpreter=self, args=args)
 
 	def visit(self, expr):
 		raise NotImplementedError(f"know not what to do with {expr.__class__.__name__}")

@@ -61,21 +61,21 @@ class AstPrinter(Visitor):
 	def printout(self, expr: Expr):
 		assert isinstance(expr, Expr), f'expr is not a Expr, but a {expr.__class__}'
 		print('\nAST print')
-		print(expr.accept(visitor=self))
+		print(self.start_walk(expr))
 
 	def parensiffy(self, name, *exprs):
 		if len(exprs) >= 1 and exprs[0] is None:
 			return '()'
 		s = f'({name} '
 		try:
-			s += ' '.join((exp.accept(visitor=self) for exp in exprs))
+			s += ' '.join((self.start_walk(exp) for exp in exprs))
 		except AttributeError as e:
 			print('\n', exprs, '\n')
 			raise e  #why this? how to avoid this?
 		s += ')'
 		return s
 
-	def visitGrouping(self, expr):
+	def visitGrouping(self, expr: Grouping):
 		return self.parensiffy('Group', expr.expr)
 
 	def visitLiteral(self, expr):
@@ -88,9 +88,14 @@ class AstPrinter(Visitor):
 		return self.parensiffy(expr.op.lexeme, expr.left, expr.right)
 
 	def visitTernary(self, expr):
-		return (f'if [{expr.comparison.accept(visitor=self)}]; '
-			f'then [{expr.left.accept(visitor=self)}]; '
-			f'else [{expr.right.accept(visitor=self)}]')
+		return (f'if [{self.start_walk(expr.comparison)}]; '
+			f'then [{self.start_walk(expr.left)}]; '
+			f'else [{self.start_walk(expr.right)}]')
+
+	def visitCall(self, expr):
+		s = self.start_walk(expr.callee)
+		s += ", ".join((self.start_walk(e) for e in expr.args))
+		return s
 
 	"""
 	def visitExpr(self, expr):

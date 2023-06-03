@@ -1,6 +1,7 @@
 # util.py
 from abc import ABC, abstractmethod
 from dataclasses import fields, asdict, is_dataclass
+from typing import Protocol
 
 
 class Visitable:  #somehow tell mypy that this is a mixin that will be used in a Dataclass instance ALWAYS
@@ -47,4 +48,13 @@ class Visitor(ABC):
 
 	@abstractmethod
 	def visit(self, obj):
+		...
+
+
+class PloxCallable(Protocol):
+	@property
+	def arity(self) -> int:
+		...
+
+	def call(self, interpreter, args: list):
 		...
