@@ -38,6 +38,17 @@ class StmtWhile(Stmt):
 class Block(Stmt):
 	statements: list[Stmt]
 
+@dataclass
+class StmtFun(Stmt):
+	name: Token
+	params: list[Token]
+	body: list[Stmt]
+
+@dataclass
+class StmtReturn(Stmt):
+	keyword: Token
+	value: Expr|None
+
 
 class StmtVisitor(Visitor):
 	exprPrinter = AstPrinter()
@@ -71,6 +82,12 @@ class StmtVisitor(Visitor):
 		return (f'WHILE {self.exprPrinter.start_walk(stmt.condition)}\nDO\t'
 			 + self.start_walk(stmt.body))
 
+	def visitStmtFun(self, stmt: StmtFun):
+		pams = ", ".join([str(t) for t in stmt.params])
+		return f'FUNC {stmt.name.lexeme}({pams})\n'+ self.start_walk(Block(stmt.body))
+
+	def visitStmtReturn(self, stmt):
+		return f"RETURN " + self.start_walk(stmt.value) if stmt.value is not None else 'nil'
 	def visitStmt(self, stmt):
 		return 'Stmt()'
 

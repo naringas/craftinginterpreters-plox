@@ -4,18 +4,11 @@ from scanner import Token, TokenType
 from environment import Environment
 from expressions import *
 from statements import *
-
+from errors import InterpreterError, Return
 import libplox
 from util import PloxCallable, Visitable, Visitor
 
 global hadError
-
-class InterpreterError(RuntimeError):
-	def __init__(self, token: Token, msg: str, *args, **kwargs):
-		assert isinstance(token, Token)
-		self.token = token
-		self.msg = msg
-		return super().__init__(self, *args, **kwargs)
 
 
 def parse_error(token: Token, msg: str):
@@ -26,7 +19,6 @@ def parse_error(token: Token, msg: str):
 		print(f'Error at line {token.detail_pos()} "{token.lexeme}".', msg);
 
 class Interpreter(Visitor):
-
 	def __init__(self):
 		self.environment = Environment()
 		self.globals = self.environment
@@ -106,7 +98,7 @@ class Interpreter(Visitor):
 				return float(l) * float(r)
 			case TokenType.PLUS:
 				# "it's a little special, the strings and numbers..." but LOL.PYTHON
-				return float(l) + float(r)
+				return l + r
 
 			case TokenType.GREATER:
 				return l > r
@@ -143,9 +135,9 @@ class Interpreter(Visitor):
 			var_value = self.environment[expr.name]
 		except KeyError:# as e:
 			raise InterpreterError(expr.name, f"Undeclared variable.")
+
 		if var_value is None:
 			raise InterpreterError(expr.name, f"Variable without a value.")
-
 		return var_value
 
 	def visitAssign(self, expr: Assign):
@@ -183,13 +175,24 @@ class Interpreter(Visitor):
 
 	def visitCall(self, expr: Call):
 		callee: PloxCallable = self.evaluate(expr.callee)
-		args = [self.evaluate(a) for a in expr.args]
-
 		# TODO ensure callee is reall callable
 		# assert isinstance(callee, PloxCallable)
-		if len(args) != callee.arity:
+		if len(expr.args) != callee.arity:
 			raise InterpreterError(expr.paren, "wrong argument count")
+
+		args = [self.evaluate(a) for a in expr.args]
 		return callee.call(interpreter=self, args=args)
+
+	def visitStmtFun(self, stmt: StmtFun):
+		plox_fun = libplox.PloxFunction(stmt, self.environment)
+		self.environment.define(stmt.name, plox_fun)
+		# return None
+
+	def visitStmtReturn(self, stmt: StmtReturn):
+		val = None
+		if stmt.value is not None:
+			val = self.evaluate(stmt.value)
+		raise Return(val)
 
 	def visit(self, expr):
 		raise NotImplementedError(f"know not what to do with {expr.__class__.__name__}")

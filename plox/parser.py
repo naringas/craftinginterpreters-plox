@@ -86,16 +86,20 @@ class Parser():
 	# the parsing itself:
 	"""
 	program        → declaration* EOF ;
-	declaration    → (varDecl | funDecl | statement) ;
+	declaration    → funDecl
+	               | varDecl
+	               | statement ;
 
-	varDecl        → "var" IDENTIFIER  ("=" expression)? ";" ;
-	funDecl        → "fun" IDENTIFIER  "(" parameters? ")" ";" ;
+	funDecl        → "fun" function
+	funtion        → IDENTIFIER  "(" parameters? ")" ";" ;   !! will be reused by classes later
 	parameters     → IDENTIFIER ( "," IDENTIFIER )* ;     // a list of IDENTIFIERS
+	varDecl        → "var" IDENTIFIER  ("=" expression)? ";" ;
 
 	statement      → exprStmt
 	               | forStmt
 	               | ifStmt
 	               | printStmt
+	               | returnStmt
 	               | whileStmt
 	               | block ;
 	exprStmt       → expression ";" ;                     // a grouping-alike
@@ -104,6 +108,7 @@ class Parser():
 	                    expression? ";"
 	                    expression? ")" statement ;
 	printStmt      → "print" expression ";" ;
+	returnStmt     → "return" expression? ";" ;
 	ifStmt         → "if" "(" expression ")" statement ("else" statement)? ;
 	whileStmt      → "while" "(" expression ")" statement ;
 	block          → "{" declaration* "}"
@@ -137,13 +142,32 @@ class Parser():
 
 	def declaration(self) -> Stmt|None:
 		try:
-			if self.match(TokenType.VAR):
-				return self.varDecl()
+			if self.match(TokenType.FUN): return self.function("function")
+			if self.match(TokenType.VAR): return self.varDecl()
 			return self.statement()
 		except ParserError as e:
 			parse_error(self.peek(), e.msg)
 			self.synchronize()
 		return None # wtf mypy... make the None explicit.ffs #Stmt()  #the "null" Stmt
+
+	def function(self, kind: str = str()) -> StmtFun:
+		name: Token = self.consume(TokenType.IDENTIFIER, f"Expect {kind} name.")
+		# arguments are the expressions, parameers are the identifiers, or boxes or slots, which connect with args.
+		# args are used in the call of the func
+		# params in the definition of the func
+		self.consume(TokenType.LEFT_PAREN, f"Expect '(' after {kind} name.")
+		params : list[Token] = []
+		if not self.check(TokenType.RIGHT_PAREN):
+			params.append(self.consume(TokenType.IDENTIFIER, f"Expect parameter name."))
+			while self.match(TokenType.COMMA):
+				params.append(self.consume(TokenType.IDENTIFIER, f"Expect parameter name."))
+				if len(params) >= 255:
+					raise ParserError(self.peek(), "Can't have more than 255 paremeters.")
+		paren: Token = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after paremeters.")
+
+		self.consume(TokenType.LEFT_BRACE, f"Expect '{{' before {kind} body.")
+		body = self.block()
+		return StmtFun(name, params, body)
 
 	def varDecl(self) -> StmtVar:
 		name: Token = self.consume(TokenType.IDENTIFIER, "Expect varirable name.")
@@ -158,6 +182,7 @@ class Parser():
 		if self.match(TokenType.FOR): return self.forStatement()
 		if self.match(TokenType.IF): return self.ifStatement()
 		if self.match(TokenType.PRINT): return self.printStmt()
+		if self.match(TokenType.RETURN): return self.returnStmt()
 		if self.match(TokenType.WHILE): return self.while_()
 		if self.match(TokenType.LEFT_BRACE): return Block(self.block())
 		return self.expressionStmt()
@@ -226,6 +251,15 @@ class Parser():
 			self.consume(TokenType.SEMICOLON, "expected a ';' after printStmt. where is my  ; !?")
 			return StmtPrint(val)
 		# assert isinstance(val, Expr), f'val is {val.__class__}'
+
+	def returnStmt(self) -> StmtReturn:
+		keyword = self.previous()
+		value = None
+		if not self.check(TokenType.SEMICOLON):
+			value = self.expression()
+
+		self.consume(TokenType.SEMICOLON, "Expect ';' after return value.")
+		return StmtReturn(keyword, value)
 
 	def while_(self) -> StmtWhile:
 		self.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.")
@@ -346,7 +380,7 @@ class Parser():
 			arguments.append(self.expression())
 			while self.match(TokenType.COMMA):
 				arguments.append(self.expression())
-				if len(arguments) >= 254:  # +1 already appended
+				if len(arguments) >= 255:
 					raise ParserError(self.peek(), "Can't have more than 255 arguments.")
 		paren: Token = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
 

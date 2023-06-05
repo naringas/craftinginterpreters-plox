@@ -3,13 +3,15 @@ import sys
 from scanner import Scanner, Token, TokenType
 from parser import Parser
 from interpreter import Interpreter
-from statements import StmtVisitor
+from statements import StmtVisitor, Stmt
 
 
 global hadError
 
 
 def runPrompt():
+	i = Interpreter()  #making a new interpreter makes a new Enviornment also
+
 	while True:
 		try:
 			line = input("plox> ")
@@ -17,11 +19,25 @@ def runPrompt():
 			print("\n\nbuhbuy!")
 			break
 		else:
-			# Interpreter().interpret(Parser(Scanner(line).scanTokens()).parse())
-			if False and not line.rstrip().endswith('}') and not line.rstrip().endswith(';'):
-				print("WARNING, statements must end with a ';'.")
-				line += ';'
-			run(line)
+			# print('TOKENS')
+			tokens: list[Token] = Scanner(line).scanTokens()
+			stmts_list: list[Stmt] = Parser(tokens).parse()
+			print('\nSTATEMENTS')
+			stmt_printer = StmtVisitor()
+			for stmt in stmts_list:
+				if stmt is not None:
+					print(StmtVisitor().start_walk(stmt))
+				else:
+					print('none stmt')
+
+			print('\nINTERPRETATION')
+			for stm in stmts_list:
+				if stm is not None:
+					i.interpret(stm)
+				else:
+					print(f'skiped a none stmt `{stm}`')
+
+			print()
 		hadError = False
 
 def runFile(filepath):
@@ -30,26 +46,10 @@ def runFile(filepath):
 		run(f.read())
 
 def run(source):
-	# print('TOKENS')
 	tokens = Scanner(source).scanTokens()
-	'''
-	if (L := len(tokens)) > 12:
-		print(f'...{L} more tokens before.')
-	for t in tokens[-12:]:
-		print(t)
-	'''
 
 	stmts_list = Parser(tokens).parse()
 
-	print('\nSTATEMENTS')
-	stmt_printer = StmtVisitor()
-	for stmt in stmts_list:
-		if stmt is not None:
-			print(StmtVisitor().start_walk(stmt))
-		else:
-			print('none stmt')
-
-	print('\nINTERPRETATION')
 	i = Interpreter()
 	for stm in stmts_list:
 		if stm is not None:
@@ -57,7 +57,6 @@ def run(source):
 		else:
 			print(f'skiped a none stmt `{stm}`')
 
-	print()
 
 if __name__ == "__main__":
 	hadError = False
