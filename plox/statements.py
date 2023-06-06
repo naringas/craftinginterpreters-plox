@@ -1,6 +1,7 @@
 # expressions.py
 from abc import ABC
 from dataclasses import dataclass, fields
+from typing import Protocol
 
 from scanner import Token, TokenType
 from expressions import Expr, AstPrinter
@@ -50,7 +51,24 @@ class StmtReturn(Stmt):
 	value: Expr|None
 
 
-class StmtVisitor(Visitor):
+class StmtVisitorProt(Protocol):
+	def visitStmtExpr(self, stmt: StmtExpr): ...
+
+	def visitStmtPrint(self, stmt: StmtPrint): ...
+
+	def visitStmtVar(self, stmt: StmtVar): ...
+
+	def visitStmtIf(self, stmt: StmtIf): ...
+
+	def visitStmtWhile(self, stmt: StmtWhile): ...
+
+	def visitStmtFun(self, stmt: StmtFun): ...
+
+	def visitStmtReturn(self, stmt: StmtReturn): ...
+
+	def visitBlock(self, stmt: Block): ...
+
+class StmtVisitor(StmtVisitorProt, Visitor):
 	exprPrinter = AstPrinter()
 
 	def print(self, stmt):
@@ -88,6 +106,10 @@ class StmtVisitor(Visitor):
 
 	def visitStmtReturn(self, stmt):
 		return f"RETURN " + self.start_walk(stmt.value) if stmt.value is not None else 'nil'
+
+	def visitStmtPrint(self, stmt: StmtPrint):
+		return f"PRINT {self.start_walk(stmt.expr)}"
+
 	def visitStmt(self, stmt):
 		return 'Stmt()'
 
@@ -96,3 +118,4 @@ class StmtVisitor(Visitor):
 			return self.exprPrinter.start_walk(stmt)
 
 		return str(stmt)
+

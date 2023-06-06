@@ -18,7 +18,7 @@ def parse_error(token: Token, msg: str):
 	else:
 		print(f'Error at line {token.detail_pos()} "{token.lexeme}".', msg);
 
-class Interpreter(Visitor):
+class Interpreter(StmtVisitorProt, ExprVisitorProt, Visitor):
 	def __init__(self):
 		self.environment = Environment()
 		self.globals = self.environment

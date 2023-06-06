@@ -1,6 +1,7 @@
 # expressions.py
 from abc import ABC
 from dataclasses import dataclass, fields
+from typing import Protocol
 
 from scanner import Token, TokenType
 from util import Visitable, Visitor
@@ -55,7 +56,25 @@ class Call(Expr):
 	args: list[Expr]
 
 
-class AstPrinter(Visitor):
+class ExprVisitorProt(Protocol):
+	def visitLiteral(self, expr: Literal): ...
+
+	def visitGrouping(self, expr: Grouping): ...
+
+	def visitUnary(self, expr: Unary): ...
+
+	def visitBinary(self, expr: Binary): ...
+
+	def visitVariable(self, expr: Variable): ...
+
+	def visitAssign(self, expr: Assign): ...
+
+	def visitLogical(self, expr: Logical): ...
+
+	def visitCall(self, expr: Call): ...
+
+
+class AstPrinter(ExprVisitorProt, Visitor):
 	"""only good at printing out (and making strings) from binary expressions"""
 
 	def printout(self, expr: Expr):
@@ -101,7 +120,20 @@ class AstPrinter(Visitor):
 	def visitExpr(self, expr):
 		return self.parensiffy(expr.expr)
 	"""
+	def visitAssign(self, e):
+		return str(e)
+
+	def visitBlock(self, e):
+		return str(e)
+
+	def visitLogical(self, e):
+		return str(e)
+
+	def visitVariable(self, e):
+		return str(e)
 
 	def visit(self, expr):
 		# print(f"\t!!def visit of {expr}")
 		return str(expr)
+
+
